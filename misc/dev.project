@@ -1,0 +1,9 @@
+with-compiler: ghc-9.12.2
+
+package effable
+  flags: +doctest +isDev
+
+tests: True
+test-show-details: direct
+
+write-ghc-environment-files: always

@@ -1,0 +1,9 @@
+*~
+.non-vcs/
+.aux/
+.ghc.environment.*
+.stack-work/
+stack.yaml.lock
+dist-newstyle/
+/cabal.project.local
+cabal.project.freeze

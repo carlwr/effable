@@ -1,0 +1,28 @@
+#! /usr/bin/env zsh
+
+emulate -L zsh
+set -eu -o pipefail
+
+ghc_versions=(
+  9.12.2
+  9.10.2
+  9.8.4
+  9.6.7
+  9.4.8
+  )
+
+foreach v ( $ghc_versions ) {
+  print
+  print "***"
+  print "*** version: $v"
+  print "***"
+  print
+  rm -rf dist-newstyle/cache/ \
+         dist-newstyle/build/
+  cabal --with-compiler=ghc-$v --prefer-oldest build
+  cabal --with-compiler=ghc-$v --prefer-oldest test
+}
+
+print
+print '*** DONE.'
+print

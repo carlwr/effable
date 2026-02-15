@@ -1,0 +1,65 @@
+#! /usr/bin/env zsh
+
+emulate -L zsh
+set -eu -o pipefail
+
+me=${0:t}
+
+template=${1:-'assets/readme-template.md'}
+hsModule=${2:-'src/Effable.hs'}
+
+help="
+usage:
+  $me [-h] [template] [hsModule]
+
+example:
+  $me > ./README.md
+
+Magic string '{hsModule}' must appear exactly once in the template file.
+"
+
+multi-grep        () pcre2grep -M --max-count=1 -O '$1' $@
+haddock2md        () pandoc -f haddock -t gfm-smart --wrap=none
+subst             () perl -wpe s/$1/$2/xg
+
+fix-doubleticks   () subst  '``'                      ''
+clean-links       () subst  '\[ (.*?) \]\(  .*?  \)'  '$1'
+italic-line2quote () subst  '^ \* (.*) \* $        '  '> $1'
+
+get-docstring()
+  multi-grep \
+  '(?sx)
+  (?:  {-[ ]?\|
+       .*?       # any module description fields
+       \n\n
+  )
+  (    .*?       # module docs, -> CAPTURE
+  )
+  (?:  \n
+       -}
+  )
+  ' $1
+
+
+docstring2md()
+  { haddock2md       |
+    fix-doubleticks  |
+    clean-links      |
+    italic-line2quote
+  }
+
+# not a templating engine - just a bad hack.
+
+pre-var () { cat $template|multi-grep '(?sx)(.*)\Q{hsModule}\E .*' ; }
+post-var() { cat $template|multi-grep '(?sx) .* \Q{hsModule}\E(.*)'; }
+
+main()
+  { pre-var
+    get-docstring $hsModule | docstring2md
+    post-var
+  }
+
+case ${1-} in
+   (-h|--help)  <<< $help && exit 0
+;; (*)          main
+;; esac

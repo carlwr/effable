@@ -79,7 +79,7 @@ library
   hs-source-dirs:  src
   autogen-modules: Paths_effable
   other-modules:   Paths_effable
-  exposed-modules: Effable
+  exposed-modules: Data.Effable
 
 test-suite doctest
   import:

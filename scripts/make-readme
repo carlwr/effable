@@ -6,7 +6,7 @@ set -eu -o pipefail
 me=${0:t}
 
 template=${1:-'assets/readme-template.md'}
-hsModule=${2:-'src/Effable.hs'}
+hsModule=${2:-'src/Data/Effable.hs'}
 
 help="
 usage:

@@ -56,7 +56,7 @@ Or, /Eff-able/ as in /able to be effected/ or /effectuated/ - something with the
 -}
 
 
-module Effable
+module Data.Effable
 (
   -- * Type
   Effable

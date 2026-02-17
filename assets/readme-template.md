@@ -9,7 +9,7 @@ _A data structure for emission plans_
 
 
 ```haskell
--- λ> import Effable
+-- λ> import Data.Effable
 -- λ> :info Effable
 
 type Effable :: (* -> *) -> * -> *
@@ -30,7 +30,7 @@ instance IsString b => IsString (Effable m b)
 
 Links:
 * [Hackage page](https://hackage.haskell.org/package/effable)
-* [API documentation](https://hackage.haskell.org/package/effable/docs/Effable.html)
+* [API documentation](https://hackage.haskell.org/package/effable/docs/Data-Effable.html)
 * [github.com/carlwr/effable](https://github.com/carlwr/effable)
 
 ---

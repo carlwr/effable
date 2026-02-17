@@ -271,6 +271,7 @@ The given function /composes outside of/ any existing wrappers.
 @
 'wrap' 'id'          ==  'id'
 'wrap' (f . g)\ \    ==  'wrap' f . 'wrap' g
+          \ \ \ \        -- composes covariantly
 
 run' ('wrap' f x)\ \ ==  f '<$>' (run' x)      where run' = 'runWith' emit
 @
@@ -284,6 +285,7 @@ The given function /composes inside of/ any existing wrappers.
 @
 'wrapInside' 'id'              ==  'id'
 'wrapInside' (f . g)\ \        ==  'wrapInside' g . 'wrapInside' f
+                \ \ \ \            -- composes contravariantly
 
 'run' emit ('wrapInside' f x)  ==  'run' (f . emit) x
 @

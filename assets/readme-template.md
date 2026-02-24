@@ -40,4 +40,8 @@ Links:
 
 # Written by a human
 
-AI tools were used extensively during the development of this package - for exploration, discussions, and feedback. All code and documentation were however authored by me (Carl), a human developer: no text in this repository is direct output from an AI model.
+During the development of this package, AI models were used extensively for discussions and feedback. All code and documentation however is authored by me (Carl), a human developer: no text (code; natural language) within this package/repo is direct output from an AI model.
+
+Since I am not a native English speaker, any natural language is likely to feature language quirks. AI models were not asked to identify or rectify such.
+
+The above should not be understood as any opinion or even preference of mine - I both use and value development with higher degrees of AI autonomy than what was used in this (and many of my other) projects.

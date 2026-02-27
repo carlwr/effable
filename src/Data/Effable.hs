@@ -82,6 +82,7 @@ module Data.Effable
 , ifThenElse
 , Enumerable
 , byAction
+, byActionMaybe
 , embedAction
 
 -- * Effectuate
@@ -495,6 +496,31 @@ _byAction_doctest_code n_limit = _ineffable_res'
     λ> (fromIntegral (maxBound :: Int) :: Float) * 2 / 0.5e6 * 829e6 / 1e12
     3.05847e10
     -}
+
+{- | /Evaluation of finite-domain function/ whose result is a 'Maybe' value.
+
+Using this function allows deciding to suppress evaluation results based on the value the action yielded. Yet, the internal representation only grows proportional to the number of domain inhabitants for which a 'Just' value is returned, rather than being proportional to the number of inhabitants.
+
+@
+'byAction' xM  f  ==  'byActionMaybe' xM ('Just' . f)
+@
+-}
+byActionMaybe
+  :: (Monad m, Enumerable a)
+  => m a                         -- ^ monadic evaluation point
+  -> (a -> Maybe (Effable m b))  -- ^ the function to evaluate
+  -> Effable m b
+byActionMaybe xM f = foldMapMaybe g domain
+  where
+    g d    = when' ((==d) <$> xM) <$> (f d)
+    domain = [minBound..maxBound]
+
+    foldMapMaybe :: (Foldable t, Monoid mm) => (x -> Maybe mm) -> t x -> mm
+    foldMapMaybe f' = foldr comb mempty
+      where
+        comb x xs = case f' x of
+          Just x' -> x' <> xs
+          _       ->       xs
 
 {- | /Evaluation of finite-domain value/ for the daring.
 

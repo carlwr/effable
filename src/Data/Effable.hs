@@ -75,6 +75,7 @@ module Data.Effable
 -- $wrap
 , wrap
 , wrapInside
+, wrapEach
 
 -- * Branching #branching#
 , when'
@@ -363,6 +364,30 @@ wrapInside :: Wrap m -> Effable m b -> Effable m b
 
 wrap       f x = wrapEm' (f .) x
 wrapInside f x = wrapEm' (. f) x
+
+{- | Add an additional emission wrapper to each item.
+
+The given function /composes outside of/ any existing wrappers.
+
+=== __For a @wrapEachInside@ function__
+
+For a variant of this function that composes the new wrapper /inside of/ existing wrappers, the user may choose to define::
+
+@
+wrapEachInside :: (b -> 'Wrap' m) -> 'Effable' m b -> 'Effable' m b
+wrapEachInside f eff =
+  let g x = 'singleton' (f x) x
+  in  eff '>>=' g
+@
+
+-}
+wrapEach :: (b -> Wrap m) -> Effable m b -> Effable m b
+wrapEach f = effify $ \ps -> [Part (f x . w  ) x | Part w x <- ps]
+
+_wrapEachInside :: (b -> Wrap m) -> Effable m b -> Effable m b
+_wrapEachInside f eff =
+  let  g x = singleton (f x) x
+  in   eff >>= g
 
 
 --- branching

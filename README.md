@@ -89,7 +89,7 @@ Metaphorically, `Effable` is the many-worlds interpretation of *actions* meaning
 
 *Effable* as in *sayable* or *utterable*.
 
-Or, *Eff-able* as in *able to be effected* or *effectuated* - something with the potential of becoming effects.
+Or, *Eff-able* as in *able to be effected* or *effectuated* - something with the potential to become effects.
 
 
 # Written by a human

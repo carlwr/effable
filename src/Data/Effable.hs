@@ -52,7 +52,7 @@ Metaphorically, t'Effable' is the many-worlds interpretation of /actions/ meanin
 
 /Effable/ as in /sayable/ or /utterable/.
 
-Or, /Eff-able/ as in /able to be effected/ or /effectuated/ - something with the potential of becoming effects.
+Or, /Eff-able/ as in /able to be effected/ or /effectuated/ - something with the potential to become effects.
 -}
 
 
@@ -102,7 +102,13 @@ import Data.Foldable
 
 {- implementation notes:
 
-- instances of "\ \" etc. in docstrings are in order to sync vertical alignment/whitespace padding between code and the generated haddock
+- user-facing terminology for one element of [Part m b]:
+  - module docstring:
+    - "a @b@", "each @b@" etc.; prefer over "item" to the extent reasonable
+  - everywhere else (including later docstrings, identifier names):
+    - "item(s)" (clarify with "a @b@" etc. where suitable, e.g. at first use after the module docstring and in 'run' docstring)
+
+- instances of "\ \" etc. in docstrings are used to sync vertical alignment/whitespace padding between code and the generated haddock
 
 -}
 
@@ -195,6 +201,10 @@ _effable_applicative_doctest_typechecks = undefined
 
 The result of @xs '>>=' f@ is the concatenation of the results of applying @f@ to each value embedded in @xs@.
 
+@
+'pure' x  ==  'embed' x
+@
+
 Note that the 'Monad' instance of t'Effable' is not related to the type parameter @m@ in a value of type @t'Effable' m b@ - that @m@ is a parameterization of the eventual effectful context (@m ()@) that will be used for emission. The 'Monad' instance of t'Effable', on the other hand, allows for and defines monadic computations on @t'Effable' m b@ values themselves.
 
 -}
@@ -242,7 +252,7 @@ string = embed . fromString
 --- transform
 --- ---------
 
-{- | Map items.
+{- | Map items (= map over @b@s).
 
 @
 'mapItems' == 'fmap'
@@ -260,6 +270,8 @@ mapItems = fmap
 
 {- $wrap
 
+=== Laws
+
 These hold for both 'wrap' and 'wrapInside':
 
 @
@@ -269,28 +281,28 @@ g '<$>' 'wrap' f x   ==  'wrap' f (g '<$>' x) \ \     -- commutes with 'fmap'
 @
 -}
 
-{- | Add an additional emission wrapper to each @b@.
+{- | Add an additional emission wrapper to all items.
 
 The given function /composes outside of/ any existing wrappers.
 
 @
 'wrap' 'id'          ==  'id'
 'wrap' (f . g)\ \    ==  'wrap' f . 'wrap' g
-          \ \ \ \        -- composes covariantly
+          \ \ \ \        -- composes /co/variantly
 
 run' ('wrap' f x)\ \ ==  f '<$>' (run' x)      where run' = 'runWith' emit
 @
 -}
 wrap :: Wrap m -> Effable m b -> Effable m b
 
-{- | Add an additional emission wrapper to each @b@.
+{- | Add an additional emission wrapper to all items.
 
-The given function /composes inside of/ any existing wrappers.
+The given function /composes inside of/ any existing wrappers, i.e. it will be applied directly to the action produced by the emission.
 
 @
 'wrapInside' 'id'              ==  'id'
 'wrapInside' (f . g)\ \        ==  'wrapInside' g . 'wrapInside' f
-                \ \ \ \            -- composes contravariantly
+                \ \ \ \            -- composes /contra/variantly
 
 'run' emit ('wrapInside' f x)  ==  'run' (f . emit) x
 @
@@ -327,6 +339,19 @@ when' bM =
     b <- bM
     when b action
 
+{- | /Conditional inclusion/ (pure predicate).
+
+Note that @'whenA' False _@ is not generally the same as 'mempty': @'whenA' False x@ preserves the structure of @x@ even though its emission will be suppressed:
+
+>>> runEmit eff = putStr "result: " >> run putStr eff
+>>> prepend_a = (putStr "a" *>)
+>>> runEmit $ wrap prepend_a (whenA False (string "suppressed"))
+result: a
+
+>>> runEmit $ wrap prepend_a mempty
+result:
+
+-}
 whenA
   :: Applicative m
   => Bool
@@ -334,7 +359,20 @@ whenA
   -> Effable m b
 whenA b = wrap (when b)
 
-{- | Flipped 'when''. -}
+
+{- | Flipped 'when''.
+
+The high precedence allows expressions such as e.g.:
+
+@
+{-# LANGUAGE OverloadedStrings #-}
+
+debugMsg =
+ \ \    ("host: "'<>'host)  \`'onlyIf'\`  isPrintHostM
+  '<>'   "is connected"\ \  \`'onlyIf'\`  isPrintStatusM
+@
+
+-}
 onlyIf
   :: Monad m
   => Effable m b  -- ^ to include if True (else nothing)
@@ -367,14 +405,20 @@ type Enumerable a = (Enum a, Bounded a, Eq a)
 
 When emitted, the monadic action will be run once for each element, for each inhabitant of the 'Enumerable' type that the action yields.
 
-=== Comparing with '>>='
-
-The signature can be compared to that of /monadic bind/ ('>>='):
+In light of 'byAction', 'ifThenElse' can be viewed as 'byAction' specialized to a domain with the two inhabitants 'True' and 'False':
 
 @
-'byAction' :: ('Enumerable' a, e b ~ t'Effable' m b) =>
-\ \           'Monad' m => m a -> (a -> e b) -> e b
-('>>=')    :: 'Monad' m => m a -> (a -> m b) -> m b
+'ifThenElse' bM x y  ==  'byAction' bM (\b -> if b then x else y)
+@
+
+(Between the LHS and RHS the ordering of the internal representation will be different; that is however not observable with read-like actions.)
+
+=== Comparing the signature with '>>='
+
+@
+'byAction' :: ('Enumerable' a, eff b ~ t'Effable' m b) =>
+\ \           'Monad' m => m a -> (a -> eff b) -> eff b
+('>>=')    :: 'Monad' m => m a -> (a -> m   b) -> m   b
 @
 
 A possible interpretation of the two signatures is:
@@ -394,7 +438,6 @@ All outcomes of the action are reified in the internal representation. With 'IO'
 > λ> effable = byAction (pure True) embed
 >
 > λ> -- make GHCi report evaluation time and allocated bytes:
->
 > λ> :set +s
 >
 > λ> run print effable
@@ -402,14 +445,13 @@ All outcomes of the action are reified in the internal representation. With 'IO'
 > (ran for 0.01 secs, allocated 1,014,600 bytes)
 >
 
-An 'Int' is 'Enumerable' but has many inhabitants so reifying @IO Int@ becomes costly in both time and allocations.
+An 'Int' is 'Enumerable' but has many inhabitants so reifying @IO Int@ becomes costly.
 
 > --- GHCi session ---
 >
 > λ> ineffable = byAction (pure (1::Int)) embed
 >
 > λ> :set +s
->
 > λ> run print ineffable
 > 1
 > (ran for 1.02 million years, allocated 3.06e10 gigabytes)
@@ -425,9 +467,8 @@ byAction xM f = foldMap g domain
   where
     g d    = when' ((==d) <$> xM) (f d)
     domain = [minBound..maxBound]
-  -- why give the user a footgun, when you can give them a death star pointed right at their head?
-  -- a function like this shouldn't be seen anywhere near an API surface. But it is useful. So here it is.
-  -- ...we're adults after all; it's not my job to lock the door - I've put the tie on the doorknob, if you walk in, then what you see is on you.
+  -- "why give the user a footgun, when you can give them a death star pointed right at their head?"
+  -- a function like this shouldn't be seen anywhere near an API surface. But it is useful. So here it is. I'm not locking the door, but I _have_ put the tie on the doorknob; if you walk in, then what you see's on you.
 
 _byAction_doctest_code :: Int -> IO ()
 _byAction_doctest_code n_limit = _ineffable_res'
@@ -459,6 +500,10 @@ _byAction_doctest_code n_limit = _ineffable_res'
 
 When emitted, the monadic action will be run once for each value of the domain.
 
+@
+'embedAction' x  ==  'byAction' x 'embed'
+@
+
 (The same warning as that for 'byAction' applies.)
 -}
 embedAction
@@ -471,7 +516,7 @@ embedAction xM = byAction xM embed
 --- effectuate
 --- ----------
 
-{- | For each @b@ of an t'Effable', emit it with the given function, then apply the composed emission wrapper associated with that @b@, and combine all results.
+{- | For each item (each @b@) of an t'Effable', emit it with the given function, then apply the composed emission wrapper associated with that item, and combine all results.
 
 == Laws
 
@@ -504,10 +549,21 @@ With emission wrapper:
 >>> run emitConst (embed 'a' <> (silence $ embed 'b') <> embed 'c')
 Const "ac"
 
+== Definition
+
+'run' is the /monoid homomorphism/
+
+@
+from   ('Effable' m b, '<>', 'mempty' )
+to     (m ()\ \      , '*>', 'pure' ())
+@
+
+and is natural in the emission function.
+
 -}
 run
   :: Applicative m
-  => (b -> m ())      -- ^ emitting one @b@
+  => (b -> m ())      -- ^ emitting one item
   -> Effable m b
   -> m ()
 run emit (Effable parts) = traverse_ (emitPart emit) parts
@@ -540,7 +596,7 @@ The following uses the 'foldr' method of t'RunWith'\'s 'Foldable' instance to cr
 
 -}
 runWith
-  :: (b -> m ())      -- ^ emitting one @b@
+  :: (b -> m ())      -- ^ emitting one item
   -> Effable m b
   -> RunWith (m ())
 runWith emit (Effable parts) = coerce (emitPart emit <$> parts)

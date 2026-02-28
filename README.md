@@ -4,6 +4,7 @@ _A data structure for emission plans_
 
 ![GitHub License](https://img.shields.io/github/license/carlwr/effable)
 ![Hackage Version](https://img.shields.io/hackage/v/effable)
+![CI](https://img.shields.io/github/actions/workflow/status/carlwr/effable/ci.yml?label=CI)
 
 <br>
 

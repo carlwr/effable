@@ -67,10 +67,10 @@ module Data.Effable
 , embed
 , string
 
--- * Transform items
+-- * Transform
+-- ** Items
 , mapItems
-
--- * Transform wraps
+-- ** Wraps
 -- $wrap
 , wrap
 , wrapInside

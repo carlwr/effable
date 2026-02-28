@@ -55,6 +55,7 @@ Metaphorically, t'Effable' is the many-worlds interpretation of /actions/ meanin
 Or, /Eff-able/ as in /able to be effected/ or /effectuated/ - something with the potential to become effects.
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Effable
 (
@@ -94,6 +95,9 @@ module Data.Effable
 , RunWith
 , runWith
 
+-- * Usage example
+-- $env_example
+
 )
 where
 
@@ -104,6 +108,8 @@ import Control.Applicative
 import Data.Word (Word8)
 import Data.Foldable
 import Data.Maybe         qualified as Maybe
+import Data.List          qualified as L
+import System.Environment qualified as Env
 
 
 {- implementation notes:
@@ -123,6 +129,8 @@ import Data.Maybe         qualified as Maybe
 
 {- $setup
 >>> import Data.Word (Word8)
+>>> import Control.Monad
+>>> :set -XOverloadedStrings
 -}
 
 
@@ -764,3 +772,140 @@ runWith emit (Effable parts) = coerce (emitPart emit <$> parts)
 
 {-# INLINEABLE run     #-}
 {-# INLINEABLE runWith #-}
+
+
+--- example
+--- -------
+
+{- $env_example
+
+>>> import qualified System.Environment as Env
+>>> import qualified Data.List          as L
+>>> import qualified Data.Maybe         as Maybe
+
+Preparation - create some helper functions:
+
+>>> haveVar name = Maybe.isJust <$> Env.lookupEnv name
+>>> envVarsM     = L.genericLength <$> Env.getEnvironment :: IO Word8
+>>> envVars      = embedAction envVarsM                   :: Effable IO Word8
+
+Create an 'Effable', using @OverloadedStrings@ to promote 'String' literals like @"shell-invoked"@ to an 'Effable':
+
+>>> :set -XOverloadedStrings
+>>> :{
+eff =
+      (show <$> envVars)  `onlyIf`  haveVar "DBG"
+  <>  "shell-invoked"     `onlyIf`  haveVar "SHELL"
+  <>  "DONE."
+:}
+
+Depending on the environment variables present, running the 'Effable' with 'putStrLn' would return an @'IO' ()@ that prints something matching this:
+
+>>> run putStrLn eff
+...
+DONE.
+
+E.g. if 92 environment variables are set, two of which are @DBG@ and @SHELL@, the following would be printed:
+
+> >>> run putStrLn eff
+> 92
+> shell-invoked
+> DONE.
+
+__It is crucial that the code was written so that the IO action yielded a 'Word8'.__ It has 256 inhabitants, which is manageable.
+
+== Comparison: IO-monadic code
+
+This version, written directly in the IO monad, is equivalent in what it prints:
+
+>>> :{
+monadicIO = do
+  isDbg   <- haveVar "DBG"
+  isShell <- haveVar "SHELL"
+  --
+  n <- envVarsM
+  let nStr = show n
+  --
+  when isDbg   $ putStrLn nStr
+  when isShell $ putStrLn "shell-invoked"
+  putStrLn "DONE."
+:}
+
+>>> monadicIO
+...
+DONE.
+
+== @eff@ vs. @monadicIO@
+
+- (-) blows-up unless @envVarsM@ is carefully implemented to limit the domain of what the action returns
+
+- (-) is slower, and more expensive in allocations
+
+- (+) is pure, and has a type that allows further transformations:
+
+    > --- GHCi session ---
+    >
+    > λ> :t eff
+    > eff :: Effable IO String
+    >
+    > λ> :t monadicIO
+    > monadicIO :: IO ()
+
+    ...e.g.:
+
+    > >>> leftline = ("| "<>)
+    > >>> run putStrLn (leftline <$> eff)
+    > | 92
+    > | shell-invoked
+    > | DONE.
+
+-}
+
+_env_example_docstring :: IO ()
+_env_example_docstring = main_env_example
+  where
+
+    haveVar  :: String -> IO Bool
+    haveVar name = Maybe.isJust <$> Env.lookupEnv name
+    envVarsM     = L.genericLength <$> Env.getEnvironment :: IO Word8
+    envVars      = embedAction envVarsM                   :: Effable IO Word8
+
+    eff =
+        (show <$> envVars)  `onlyIf`  haveVar "DBG"
+      <> "shell-invoked"    `onlyIf`  haveVar "SHELL"
+      <> "DONE."
+
+    _res0 = run putStrLn eff
+
+    monadicIO :: IO ()
+    monadicIO = do
+      isDbg   <- haveVar "DBG"
+      isShell <- haveVar "SHELL"
+
+      n <- envVarsM
+      let nStr = show n
+
+      when isDbg   $ putStrLn nStr
+      when isShell $ putStrLn "shell-invoked"
+      putStrLn "DONE."
+
+    leftline = ("| "<>)
+    _res_leftline = run putStrLn (leftline <$> eff)
+
+    main_env_example :: IO ()
+    main_env_example = do
+      print . length  . inEffable $ eff
+      print . length  . inEffable $ ifThenElse (haveVar "SHELL") eff eff
+
+      putStrLn "\n_res0:"       ; _res0
+      putStrLn "\n_res_leftline"; _res_leftline
+      putStrLn "\nmonadic:"     ; monadicIO
+
+    -- not used: `eff` expressed with a do-block:
+    _eff_do :: Effable IO String
+    _eff_do = do
+      n <- envVars
+      let nStr = show n
+      l1 <- when' (haveVar "DBG"  ) (string nStr)
+      l2 <- when' (haveVar "SHELL") "shell-invoked"
+      pure (l1 <> l2 <> "DONE.")

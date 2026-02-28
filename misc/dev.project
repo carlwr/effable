@@ -5,5 +5,3 @@ package effable
 
 tests: True
 test-show-details: direct
-
-write-ghc-environment-files: always

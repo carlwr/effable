@@ -20,6 +20,12 @@ cabal build && cabal test -fdoctest  # if `dev.project` is not active
 
 Note: doctests may be flaky on first run after an edit; `cabal build && ..` typically mitigates that. On odd errors from `doctest-parallel`; first try to run immediately again.
 
+### Trigger CI manually
+
+```sh
+gh workflow run ci.yml --ref <branch>
+```
+
 ### Other useful commands
 
 ```sh

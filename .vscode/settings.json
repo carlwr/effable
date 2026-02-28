@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    ".ghc.environment.*": true,
+    "dist-newstyle/": true,
+    ".stack-work/": true
+  }
+}

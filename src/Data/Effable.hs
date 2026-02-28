@@ -92,12 +92,13 @@ module Data.Effable
 )
 where
 
-import Data.String (IsString (..))
+import Data.String
 import Data.Coerce
-import Control.Monad (when, MonadPlus)
-import Control.Applicative (Const(..), Alternative ((<|>), empty))
+import Control.Monad
+import Control.Applicative
 import Data.Word (Word8)
-import Data.Foldable (traverse_)
+import Data.Foldable
+
 
 {- implementation notes:
 

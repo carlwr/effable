@@ -225,8 +225,8 @@ wrapEm' f = effify $ map (mapPartWrap f)
 {-# INLINE wrapEm' #-}
 
 
---- functions
---- ---------
+--- create
+--- ------
 
 singleton :: Wrap m -> b -> Effable m b
 singleton w l = Effable [Part w l]
@@ -236,6 +236,10 @@ embed = singleton id
 
 string :: IsString b => String -> Effable m b
 string = embed . fromString
+
+
+--- transform
+--- ---------
 
 {- | Map items.
 
@@ -294,6 +298,10 @@ wrapInside :: Wrap m -> Effable m b -> Effable m b
 
 wrap       f x = wrapEm' (f .) x
 wrapInside f x = wrapEm' (. f) x
+
+
+--- branching
+--- ---------
 
 {- | /Conditional inclusion/.
 
@@ -457,6 +465,10 @@ embedAction
   => m a                     -- ^ monadic value
   -> Effable m a
 embedAction xM = byAction xM embed
+
+
+--- effectuate
+--- ----------
 
 {- | For each @b@ of an t'Effable', emit it with the given function, then apply the composed emission wrapper associated with that @b@, and combine all results.
 

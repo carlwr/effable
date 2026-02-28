@@ -70,6 +70,7 @@ module Data.Effable
 -- * Transform
 -- ** Items
 , mapItems
+, mapMaybe
 -- ** Wraps
 -- $wrap
 , wrap
@@ -99,6 +100,7 @@ import Control.Monad
 import Control.Applicative
 import Data.Word (Word8)
 import Data.Foldable
+import Data.Maybe         qualified as Maybe
 
 
 {- implementation notes:
@@ -284,6 +286,39 @@ Just ()
 -}
 mapItems :: (b->b') -> Effable m b -> Effable m b'
 mapItems = fmap
+
+{- | Map items for which the functional argument returns a 'Just' value; otherwise, don't include the item in the result.
+
+@
+'mapMaybe' f eff = eff >>= f'
+  where
+    f' x|Just y <- f x  =  'embed' y
+        |otherwise      =  'mempty'
+@
+
+For filtering, creating the following function can be helpful:
+
+@
+filter' :: (b' -> Bool) -> 'Effable' f b' -> 'Effable' f b'
+filter' p = 'mapMaybe' (\x -> if p x then Just x else Nothing)
+
+-- or, equivalently, since 'Effable' has a 'MonadPlus' instance:
+filter' = 'mfilter'
+@
+
+-}
+mapMaybe :: (b -> Maybe b') -> Effable m b -> Effable m b'
+mapMaybe f = effify (traverseJusts f)
+  where
+    {- For each element of the list, apply the function to each inner element and sequence the Maybe effect. Return a list of the Just results.
+
+    > >>> traverseJusts (\x->if even x then Just (x `div` 2) else Nothing) [[2,4],[21,40],[60,80]]
+    > [[1,2],[30,40]]
+
+    -}
+    traverseJusts :: Traversable t => (bb -> Maybe bb') -> [t bb] -> [t bb']
+    traverseJusts f' = Maybe.mapMaybe (traverse f')
+
 
 {- $wrap
 
@@ -647,6 +682,7 @@ runWith emit (Effable parts) = coerce (emitPart emit <$> parts)
 {-# INLINE singleton  #-}
 {-# INLINE embed      #-}
 {-# INLINE mapItems   #-}
+{-# INLINE mapMaybe   #-}
 {-# INLINE wrap       #-}
 {-# INLINE wrapInside #-}
 {-# INLINE when'      #-}

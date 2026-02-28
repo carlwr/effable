@@ -140,6 +140,10 @@ instance Applicative (Part m) where
   (<*>) :: Part m (b -> b') -> Part m b -> Part m b'
   Part wf lf <*> Part wx lx  =  Part (wf . wx) (lf lx)
 
+-- single-element 'Foldable' and 'Traversable':
+instance Foldable    (Part m) where foldMap  f (Part _ x) = f x
+instance Traversable (Part m) where traverse f (Part w x) = Part w <$> f x
+
 mapPartWrap :: (Wrap m -> Wrap m) -> Part m b -> Part m b
 mapPartWrap f (Part w l) = Part (f w) l
 
@@ -228,13 +232,25 @@ instance Alternative (Effable m) where
 -- | @'Control.Monad.mplus'  ==  ('<>')@.
 instance MonadPlus (Effable m)
 
-effify :: ([Part m b]->[Part m b]) -> (Effable m b->Effable m b)
+effify :: ([Part m b]->[Part m b']) -> (Effable m b->Effable m b')
 effify = coerce
 
 wrapEm' :: (Wrap m -> Wrap m) -> Effable m b -> Effable m b
 wrapEm' f = effify $ map (mapPartWrap f)
 
 {-# INLINE wrapEm' #-}
+
+{- | traverse methods: non-exported internal helpers
+
+Currently unused.
+
+May not be exported: they allow expressing folding over bare @b@s, which does not give a semantically meaningful result/violates opacity.
+-}
+_traverseEff :: (Applicative f) => (a -> f b) -> Effable m a -> f (Effable m b)
+_traverseEff f (Effable ps) = Effable <$> traverse (traverse f) ps
+
+_sequenceEff :: (Applicative f) => Effable m (f a) -> f (Effable m a)
+_sequenceEff = _traverseEff id
 
 
 --- create

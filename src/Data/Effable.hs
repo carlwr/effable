@@ -76,6 +76,7 @@ module Data.Effable
 , wrap
 , wrapInside
 , wrapEach
+-- $wrap-overview
 
 -- * Branching #branching#
 , when'
@@ -86,6 +87,7 @@ module Data.Effable
 , byAction
 , byActionMaybe
 , embedAction
+-- $branching-overview
 
 -- * Effectuate
 , run
@@ -113,6 +115,9 @@ import Data.Maybe         qualified as Maybe
     - "item(s)" (clarify with "a @b@" etc. where suitable, e.g. at first use after the module docstring and in 'run' docstring)
 
 - instances of "\ \" etc. in docstrings are used to sync vertical alignment/whitespace padding between code and the generated haddock
+
+- haddock table bug: won't render if following immediately after heading
+  - workaround: put a `&#32;` (= SGML whitespace) between
 
 -}
 
@@ -389,6 +394,25 @@ _wrapEachInside f eff =
   let  g x = singleton (f x) x
   in   eff >>= g
 
+{- $wrap-overview
+
+== Wrap: overview
+
+&#32;
+
++--------+---------------------------+---------------------------------------------------+
+|        |Composition order          |Signature                                          |
++        +----------+----------------+                                                   |
+|        |outside   |inside          |                                                   |
+|        |          |                |                                                   |
++========+==========+================+===================================================+
+|Uniform |'wrap'    |'wrapInside'    |@'Wrap' m        -> 'Effable' m b -> 'Effable' m b@|
++--------+----------+----------------+---------------------------------------------------+
+|Per-item|'wrapEach'| wrapEachInside |@(b -> 'Wrap' m) -> 'Effable' m b -> 'Effable' m b@|
++--------+----------+----------------+---------------------------------------------------+
+
+-}
+
 
 --- branching
 --- ---------
@@ -613,6 +637,31 @@ embedAction
   => m a                     -- ^ monadic value
   -> Effable m a
 embedAction xM = byAction xM embed
+
+{- $branching-overview
+
+== Branching: overview
+
+&#32;
+
++---------------+------------------+--------------+--------------------------+
+|               |Domain            |Representation|Range of emission         |
+|               +------+-----------+∝ *1          |                          |
+|               |      |\(\Sigma\) |              |                          |
+|               |      |inhabitants|              |                          |
++===============+======+===========+==============+==========================+
+|'when''        |'Bool'|2          |\(1\)         |x₁, @pure ()@             |
++---------------+------+-----------+--------------+--------------------------+
+|'ifThenElse'   |'Bool'|2          |\(2\)         |x₁, x₂                    |
++---------------+------+-----------+--------------+--------------------------+
+|'byAction'     |@a@   |/n/        |\(n\)         |x₁, ..., xₙ               |
++---------------+------+-----------+--------------+--------------------------+
+|'byActionMaybe'|@a@   |/n/        |\(\leq n\)    |x₁, ..., xₘ, \(m \leq n\) |
++---------------+------+-----------+--------------+--------------------------+
+
+__*1__: "the size of the internal representation is proportional to..."
+
+-}
 
 
 --- effectuate

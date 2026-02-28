@@ -11,12 +11,18 @@ tested with Cabal version: `3.14.2.0`
 import: misc/dev.project
 ```
 
-### Useful commands
+### Testing
 
 ```sh
-cabal test
-cabal test -fdoctest  # if `dev.project` is not active
+cabal build && cabal test
+cabal build && cabal test -fdoctest  # if `dev.project` is not active
+```
 
+Note: doctests may be flaky on first run after an edit; `cabal build && ..` typically mitigates that. On odd errors from `doctest-parallel`; first try to run immediately again.
+
+### Other useful commands
+
+```sh
 cabal haddock --haddock-for-hackage
 
 ./scripts/make-readme > ./README.md

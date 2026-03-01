@@ -430,8 +430,8 @@ _wrapEachInside f eff =
 Suppress the effects of emitting the value if an effectful predicate evaluates to False:
 
 @
-'run' emit ('when'' (pure False) x)  == pure ()
-'run' emit ('when'' (pure True ) x)  == 'run' emit x
+'run' emit ('when'' (pure False) x)  ==  pure ()
+'run' emit ('when'' (pure True ) x)  ==  'run' emit x
 @
 
 'when'' has the distributive and commutation properties as those of 'wrap'.
@@ -517,7 +517,7 @@ When emitted, the monadic action will be run once for each element, for each inh
 In light of 'byAction', 'ifThenElse' can be viewed as 'byAction' specialized to a domain with the two inhabitants 'True' and 'False':
 
 @
-'ifThenElse' bM x y  ==  'byAction' bM (\b -> if b then x else y)
+'ifThenElse' bM x y  ==  'byAction' bM (\\b -> if b then x else y)
 @
 
 (Between the LHS and RHS the ordering of the internal representation will be different; that is however not observable with read-like actions.)
@@ -638,7 +638,7 @@ When emitted, the monadic action will be run once for each value of the domain.
 'embedAction' x  ==  'byAction' x 'embed'
 @
 
-(The same warning as that for 'byAction' applies.)
+(The same warning as that for 'byAction' apply.)
 -}
 embedAction
   :: (Monad m, Enumerable a)
@@ -708,17 +708,6 @@ With emission wrapper:
 >>> run emitConst (embed 'a' <> (silence $ embed 'b') <> embed 'c')
 Const "ac"
 
-== Definition
-
-'run' is the /monoid homomorphism/
-
-@
-from   ('Effable' m b, '<>', 'mempty' )
-to     (m ()\ \      , '*>', 'pure' ())
-@
-
-and is natural in the emission function.
-
 -}
 run
   :: Applicative m
@@ -735,7 +724,7 @@ newtype RunWith a = RunWith [a]
 Methods of the 'Foldable' and 'Traversable' instances of the result type can be used e.g. to customize how the individual emission results are combined.
 
 @
-'Data.Foldable.sequenceA_' ('runWith' emit x)  == 'run' emit x
+'Data.Foldable.sequenceA_' ('runWith' emit x)  ==  'run' emit x
 @
 
 === Example

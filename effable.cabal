@@ -34,6 +34,7 @@ flag doctest
   manual: True
 
 flag isDev
+  description: development conveniences
   default: False
   manual: True
 

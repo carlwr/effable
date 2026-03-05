@@ -2,7 +2,7 @@
 
 _A data structure for emission plans_
 
-![GitHub License](https://img.shields.io/github/license/carlwr/effable)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 ![Hackage Version](https://img.shields.io/hackage/v/effable)
 ![CI](https://img.shields.io/github/actions/workflow/status/carlwr/effable/ci.yml?label=CI)
 
@@ -99,5 +99,5 @@ During the development of this package, AI models were used extensively for disc
 
 Since I am not a native English speaker, any natural language is likely to feature language quirks. AI models were not asked to identify or rectify such.
 
-The above should not be understood as any opinion or even preference of mine - I both use and value development with higher degrees of AI autonomy than what was used in this (and many of my other) projects.
+The above should not be understood as any opinion or even preference of mine - I both use and value development with higher degrees of AI autonomy than what was used in this project.
 

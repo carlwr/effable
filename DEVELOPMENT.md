@@ -5,10 +5,14 @@ tested with Cabal version: `3.14.2.0`
 ### Enable project settings suitable for local development
 
 -> create this file:
-
 ```haskell
 --- ./cabal.project.local ---
 import: misc/dev.project
+```
+
+If a `cabal.project.local` is present it can be ignored with:
+```sh
+cabal --project-file=cabal.project.no-local ..
 ```
 
 ### Testing
@@ -19,6 +23,12 @@ cabal build && cabal test -fdoctest  # if `dev.project` is not active
 ```
 
 Note: doctests may be flaky on first run after an edit; `cabal build && ..` typically mitigates that. On odd errors from `doctest-parallel`; first try to run immediately again.
+
+Build and test with any `cabal.project.local` disabled:
+```sh
+cabal --project-file=cabal.project.no-local           build && echo "OK\n" && \
+cabal --project-file=cabal.project.no-local -fdoctest test
+```
 
 ### Trigger CI manually
 

@@ -41,6 +41,7 @@ foreach v ( $ghcs ) {
   opts=(
     -v0
     --with-compiler=ghc-$v
+    --project-file=cabal.project.no-local
     --prefer-oldest
     )
 

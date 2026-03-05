@@ -19,6 +19,7 @@ environment:
 case ${1-} in (-h|--help) <<< $help && exit 0;; esac
 
 ghcs_default=(
+  9.14.1
   9.12.2
   9.10.2
   9.8.4
@@ -37,6 +38,7 @@ foreach v ( $ghcs ) {
   print "***"
 
   runTests=1
+  [[ $v == 9.14.1 ]] && runTests=0
 
   opts=(
     -v0

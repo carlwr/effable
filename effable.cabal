@@ -14,6 +14,7 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 tested-with:
+    GHC == 9.14.1
     GHC == 9.12.2
     GHC == 9.10.2
     GHC == 9.8.4
@@ -85,7 +86,9 @@ library
 test-suite doctest
   import:
     , defaults
-  if !flag(doctest)
+  -- no solution for 9.14 due to doctest-parallell
+  -- (forcing with --alow-newer causes compilation error)
+  if !flag(doctest) || impl(ghc >= 9.14)
       buildable: False
   hs-source-dirs:  test/doctests
   type:            exitcode-stdio-1.0

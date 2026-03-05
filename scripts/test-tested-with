@@ -3,7 +3,22 @@
 emulate -L zsh
 set -eu -o pipefail
 
-ghc_versions=(
+me=${0:t}
+
+help="
+usage:
+  $me
+
+environment:
+  TTW_GHCS
+    if set and non-null, overrides default set of GHC versions to test
+    example:
+      TTW_GHCS='9.12.2 9.10.2' $me
+"
+
+case ${1-} in (-h|--help) <<< $help && exit 0;; esac
+
+ghcs_default=(
   9.12.2
   9.10.2
   9.8.4
@@ -11,16 +26,29 @@ ghc_versions=(
   9.4.8
   )
 
-foreach v ( $ghc_versions ) {
+ghcs=( ${=${TTW_GHCS:-$ghcs_default}} )
+
+integer -i runTests
+
+foreach v ( $ghcs ) {
   print
   print "***"
   print "*** version: $v"
   print "***"
-  print
+
+  runTests=1
+
+  opts=(
+    -v0
+    --with-compiler=ghc-$v
+    --prefer-oldest
+    )
+
   rm -rf dist-newstyle/cache/ \
          dist-newstyle/build/
-  cabal --with-compiler=ghc-$v --prefer-oldest build
-  cabal --with-compiler=ghc-$v --prefer-oldest test
+
+  true         && cabal $opts           build && print "OK (build)"
+  ((runTests)) && cabal $opts -fdoctest test  && print "OK (test)"
 }
 
 print

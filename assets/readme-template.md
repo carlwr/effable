@@ -3,7 +3,7 @@
 _A data structure for emission plans_
 
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-![Hackage Version](https://img.shields.io/hackage/v/effable)
+[![Hackage Version](https://img.shields.io/hackage/v/effable)](https://hackage.haskell.org/package/effable)
 ![CI](https://img.shields.io/github/actions/workflow/status/carlwr/effable/ci.yml?label=CI)
 
 <br>

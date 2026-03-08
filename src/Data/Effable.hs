@@ -108,8 +108,8 @@ import Control.Applicative
 import Data.Word (Word8)
 import Data.Foldable
 import Data.Maybe         qualified as Maybe
-import Data.List          qualified as L
 import System.Environment qualified as Env
+import Control.Exception  qualified as E
 
 
 {- implementation notes:
@@ -122,6 +122,8 @@ import System.Environment qualified as Env
 
 - instances of "\ \" etc. in docstrings are used to sync vertical alignment/whitespace padding between code and the generated haddock
 
+- "> >>> ..." in docstrings can be used to inhibit doctest execution of the line yet have haddock render it as ">>> ..."
+
 - haddock table bug: won't render if following immediately after heading
   - workaround: put a `&#32;` (= SGML whitespace) between
 
@@ -130,7 +132,12 @@ import System.Environment qualified as Env
 {- $setup
 >>> import Data.Word (Word8)
 >>> import Control.Monad
+>>> import Data.Foldable
 >>> :set -XOverloadedStrings
+
+Overrides for env_example:
+>>> isShellM   = pure True  :: IO Bool
+>>> isVerboseM = pure False :: IO Bool
 -}
 
 
@@ -766,135 +773,217 @@ runWith emit (Effable parts) = coerce (emitPart emit <$> parts)
 --- example
 --- -------
 
+-- note: for reasons of making tests deterministic, for some bindings, doctests will use hard-coded values from the $setup block
+
 {- $env_example
 
+The following creates an t'Effable' that
+
+- represents a sequence of 'String's, and
+- conditionally includes each 'String' based on an 'IO' action evaluated at emission time.
+
 >>> import qualified System.Environment as Env
->>> import qualified Data.List          as L
 >>> import qualified Data.Maybe         as Maybe
 
-Preparation - create some helper functions:
-
->>> haveVar name = Maybe.isJust <$> Env.lookupEnv name
->>> envVarsM     = L.genericLength <$> Env.getEnvironment :: IO Word8
->>> envVars      = embedAction envVarsM                   :: Effable IO Word8
-
-Create an 'Effable', using @OverloadedStrings@ to promote 'String' literals like @"shell-invoked"@ to an 'Effable':
+> >>> isShellM   = Maybe.isJust <$> Env.lookupEnv "SHELL"       :: IO Bool
+> >>> isVerboseM = Maybe.isJust <$> Env.lookupEnv "EFF_VERBOSE" :: IO Bool
 
 >>> :set -XOverloadedStrings
 >>> :{
-eff =
-      (show <$> envVars)  `onlyIf`  haveVar "DBG"
-  <>  "shell-invoked"     `onlyIf`  haveVar "SHELL"
-  <>  "DONE."
+linesEff :: Effable IO String
+linesEff =
+     "shell-invoked" `onlyIf` isShellM
+  <> "verbose-info"  `onlyIf` isVerboseM
+  <> "DONE."
 :}
 
-Depending on the environment variables present, running the 'Effable' with 'putStrLn' would return an @'IO' ()@ that prints something matching this:
-
->>> run putStrLn eff
-...
-DONE.
-
-E.g. if 92 environment variables are set, two of which are @DBG@ and @SHELL@, the following would be printed:
-
-> >>> run putStrLn eff
-> 92
-> shell-invoked
-> DONE.
-
-__It is crucial that the code was written so that the IO action yielded a 'Word8'.__ It has 256 inhabitants, which is manageable.
-
-== Comparison: IO-monadic code
-
-This version, written directly in the IO monad, is equivalent in what it prints:
+To emit the value, we use 'run' with 'putStrLn' as the emission function. The results shown below assume @SHELL@ is a set environment variable but
+  @EFF_VERBOSE@ is not.
 
 >>> :{
-monadicIO = do
-  isDbg   <- haveVar "DBG"
-  isShell <- haveVar "SHELL"
-  --
-  n <- envVarsM
-  let nStr = show n
-  --
-  when isDbg   $ putStrLn nStr
-  when isShell $ putStrLn "shell-invoked"
-  putStrLn "DONE."
+printEff :: Effable IO String -> IO ()
+printEff = run putStrLn
 :}
 
->>> monadicIO
-...
+>>> printEff linesEff
+shell-invoked
 DONE.
 
-== @eff@ vs. @monadicIO@
+The embedded 'String's can be 'fmap'-ed, e.g.:
 
-- (-) blows-up unless @envVarsM@ is carefully implemented to limit the domain of what the action returns
+>>> :{
+leftline :: String -> String
+leftline = ("| " <>)
+:}
 
-- (-) is slower, and more expensive in allocations
+>>> printEff (leftline <$> linesEff)
+| shell-invoked
+| DONE.
 
-- (+) is pure, and has a type that allows further transformations:
+It should be noted that the functionality we implemented above could just as well have been expressed without t'Effable': a value of type @'IO' ['String']@ can be equally capable. Its lines could be 'fmap'-ed with @leftline@, and including each list element (= line) could be conditioned on an @'IO' 'Bool'@.
 
-    > --- GHCi session ---
-    >
-    > λ> :t eff
-    > eff :: Effable IO String
-    >
-    > λ> :t monadicIO
-    > monadicIO :: IO ()
 
-    ...e.g.:
+=== Adding a wrapper
 
-    > >>> leftline = ("| "<>)
-    > >>> run putStrLn (leftline <$> eff)
-    > | 92
-    > | shell-invoked
-    > | DONE.
+Let's say we have this function:
+
+>>> import qualified Control.Exception as E
+>>>
+>>> :{
+-- | Run an IO action and then print a line indicating
+--   whether it threw an exception or not.
+withReporting :: IO () -> IO ()
+withReporting x = do
+  r <- E.try x
+  case (r :: Either E.SomeException ()) of
+    Left  _ -> putStrLn "(FAIL)"
+    Right _ -> putStrLn "(OK)"
+:}
+
+The following t'Effable' will apply @withReporting@ to any emission of the first 'String':
+
+>>> :{
+linesEff_reporting :: Effable IO String
+linesEff_reporting =
+     wrap withReporting ("shell-invoked" `onlyIf` isShellM  )
+  <>                    ("verbose-info"  `onlyIf` isVerboseM)
+  <> "DONE."
+:}
+
+E.g.:
+
+>>> printEff linesEff_reporting
+shell-invoked
+(OK)
+DONE.
+
+>>> printEff (leftline <$> linesEff_reporting)
+| shell-invoked
+(OK)
+| DONE.
+
+The second output includes the line
+
+> (OK)
+
+rather than
+
+> | (OK)
+
+which is the intended behaviour:
+
+- @leftline '<$>' ..@ modifies each embedded 'String' (= line), while
+- @'wrap' withReporting@ modifies how each line is emitted.
+
+The above example illustrates that an t'Effable' with an emission wrapper still retains transformability, e.g. with 'fmap'. If we would not use an t'Effable' but instead create an @'IO' _@ that includes the wrapper, it would have to be an @'IO' ()@ - which is opaque and no longer transformable.
 
 -}
 
-_env_example_docstring :: IO ()
-_env_example_docstring = main_env_example
-  where
+{- | Code used in the example. (internal/for maintenance + typechecking)
 
-    haveVar  :: String -> IO Bool
-    haveVar name = Maybe.isJust <$> Env.lookupEnv name
-    envVarsM     = L.genericLength <$> Env.getEnvironment :: IO Word8
-    envVars      = embedAction envVarsM                   :: Effable IO Word8
+Useful terminal command:
+```sh
+(unset EFF_VERBOSE; SHELL=true cabal repl --repl-options="-e _env_example_code")
+```
+-}
+_env_example_code :: IO ()
+_env_example_code = printExpressions where
 
-    eff =
-        (show <$> envVars)  `onlyIf`  haveVar "DBG"
-      <> "shell-invoked"    `onlyIf`  haveVar "SHELL"
-      <> "DONE."
+  -- Effable without wrapper
+  -- -----------------------
 
-    _res0 = run putStrLn eff
+  isShellM   = Maybe.isJust <$> Env.lookupEnv "SHELL"       :: IO Bool
+  isVerboseM = Maybe.isJust <$> Env.lookupEnv "EFF_VERBOSE" :: IO Bool
 
-    monadicIO :: IO ()
-    monadicIO = do
-      isDbg   <- haveVar "DBG"
-      isShell <- haveVar "SHELL"
+  linesEff :: Effable IO String
+  linesEff =
+       "shell-invoked" `onlyIf` isShellM
+    <> "verbose-info"  `onlyIf` isVerboseM
+    <> "DONE."
 
-      n <- envVarsM
-      let nStr = show n
+  printEff :: Effable IO String -> IO ()
+  printEff = run putStrLn
 
-      when isDbg   $ putStrLn nStr
-      when isShell $ putStrLn "shell-invoked"
-      putStrLn "DONE."
+  leftline :: String -> String
+  leftline = ("| " <>)
 
-    leftline = ("| "<>)
-    _res_leftline = run putStrLn (leftline <$> eff)
+  _res_effWithout    = printEff linesEff
+  _res_effWithout_ll = printEff (leftline <$> linesEff)
 
-    main_env_example :: IO ()
-    main_env_example = do
-      print . length  . inEffable $ eff
-      print . length  . inEffable $ ifThenElse (haveVar "SHELL") eff eff
 
-      putStrLn "\n_res0:"       ; _res0
-      putStrLn "\n_res_leftline"; _res_leftline
-      putStrLn "\nmonadic:"     ; monadicIO
+  -- Effable WITH wrapper
+  -- --------------------
 
-    -- not used: `eff` expressed with a do-block:
-    _eff_do :: Effable IO String
-    _eff_do = do
-      n <- envVars
-      let nStr = show n
-      l1 <- when' (haveVar "DBG"  ) (string nStr)
-      l2 <- when' (haveVar "SHELL") "shell-invoked"
-      pure (l1 <> l2 <> "DONE.")
+  withReporting :: IO () -> IO ()
+  withReporting x = do
+    r <- E.try x
+    case (r :: Either E.SomeException ()) of
+      Left  _ -> putStrLn "(FAIL)"
+      Right _ -> putStrLn "(OK)"
+
+  linesEff_reporting :: Effable IO String
+  linesEff_reporting =
+       wrap withReporting ("shell-invoked" `onlyIf` isShellM  )
+    <>                    ("verbose-info"  `onlyIf` isVerboseM)
+    <> "DONE."
+
+  _res_eff_reporting    = printEff linesEff_reporting
+  _res_eff_reporting_ll = printEff (leftline <$> linesEff_reporting)
+
+
+  -- Implementations in IO (no Effable)
+  -- ----------------------------------
+
+  -- (keep this code even if not used in the docstring)
+
+  linesIO :: IO [String]
+  linesIO = do
+    isShell   <- isShellM
+    isVerbose <- isVerboseM
+    pure $
+         (if isShell   then ["shell-invoked"] else [])
+      ++ (if isVerbose then ["verbose-info" ] else [])
+      ++ ["DONE."]
+
+  printIO     :: IO [String] -> IO ()
+  printIO_ll  :: IO [String] -> IO ()
+  printIO_ll' :: IO [String] -> IO ()
+
+  printIO     x = x >>= traverse_ putStrLn
+  printIO_ll  x = x >>= traverse_ (putStrLn . leftline) -- "modify emission"
+  printIO_ll' x = printIO $ fmap leftline <$> x         -- "modify value"
+
+  printIO__linesIO__reporting :: IO ()
+  printIO__linesIO__reporting = do
+    isShell   <- isShellM
+    isVerbose <- isVerboseM
+    withReporting $ when isShell   $ putStrLn "shell-invoked"
+    id            $ when isVerbose $ putStrLn "verbose-info"
+    putStrLn "DONE."
+
+
+  -- (For observing what the expressions print)
+  -- ------------------------------------------
+
+  printExpressions :: IO ()
+  printExpressions = do
+    put "\n=== Effable without wrapper ==="
+    put   "--- plain:"          ; printEff linesEff
+    put   "--- leftlined:"      ; printEff (leftline <$> linesEff)
+
+    put "\n=== Effable WITH wrapper ==="
+    put   "--- plain:"          ; printEff linesEff_reporting
+    put   "--- leftlined:"      ; printEff (leftline <$> linesEff_reporting)
+
+    put "\n-----------------------------------"
+
+    put "\n=== IO [String] without wrapper ==="
+    put   "--- plain:"          ; printIO     linesIO
+    put   "--- leftlined em.:"  ; printIO_ll  linesIO
+    put   "--- leftlined value:"; printIO_ll' linesIO
+
+    put "\n=== IO [String] WITH wrapper ==="
+    put   "--- (plain, opaque):"; printIO__linesIO__reporting
+
+    where
+      put s = putStrLn ("\n" ++ s)

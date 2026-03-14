@@ -763,6 +763,7 @@ runWith emit (Effable parts) = coerce (emitPart emit <$> parts)
 {-# INLINE mapMaybe   #-}
 {-# INLINE wrap       #-}
 {-# INLINE wrapInside #-}
+{-# INLINE wrapEach   #-}
 {-# INLINE when'      #-}
 {-# INLINE whenA      #-}
 

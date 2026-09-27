@@ -4,7 +4,10 @@ _A data structure for emission plans_
 
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 [![Hackage Version](https://img.shields.io/hackage/v/effable)](https://hackage.haskell.org/package/effable)
+[![Stackage Nightly]](https://stackage.org/nightly/package/effable)
 ![CI](https://img.shields.io/github/actions/workflow/status/carlwr/effable/ci.yml?label=CI)
+
+[Stackage Nightly]: https://stackage.org/package/effable/badge/nightly
 
 <br>
 

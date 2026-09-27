@@ -1,7 +1,5 @@
 # Development
 
-tested with Cabal version: `3.14.2.0`
-
 ### Enable project settings suitable for local development
 
 -> create this file:

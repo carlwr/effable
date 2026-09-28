@@ -46,7 +46,9 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: cabal build all --only-dependencies
+        run: |
+          cabal build effable --only-dependencies
+          cabal build effable-hspec --only-dependencies
 
       - name: Save cached dependencies
         uses: actions/cache/save@v6

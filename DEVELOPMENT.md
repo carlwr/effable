@@ -27,10 +27,21 @@ rm -rf dist-newstyle/cache/plan.json
 ### Testing
 
 ```sh
-cabal build && cabal test
+cabal build all && cabal test all
+
+# to give hspec test options:
+cabal test effable-hspec:hspec --test-options='--no-color'
+cabal test effable:doctest
 ```
 
-Note: doctests may be flaky on first run after an edit; `cabal build && ..` typically mitigates that. On odd errors from `doctest-parallel`; first try to run immediately again.
+Build and test with `stack`:
+```sh
+stack test test/hspec
+```
+
+**Notes:**
+- Note: doctests may be flaky on first run after an edit; `cabal build && ..` typically mitigates that. On odd errors from `doctest-parallel`; first try to run immediately again.
+- `hspec-tidy-formatter` depends on `effable`; hence, if mutating the lib during testing to inject bugs, use the default hspec formatter instead
 
 ### Trigger CI manually
 
@@ -46,6 +57,4 @@ cabal haddock --haddock-for-hackage
 ./scripts/make-readme > ./README.md
 
 ./scripts/test-tested-with
-
-stack test
 ```

@@ -3,5 +3,8 @@ with-compiler: ghc-9.14.1
 package effable
   flags: +isDev
 
+package effable-hspec
+  flags: +isDev
+
 tests: True
 test-show-details: direct

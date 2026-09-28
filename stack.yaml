@@ -1,1 +1,10 @@
 snapshot: lts-24.60
+
+packages:
+- .
+- test/hspec
+
+extra-deps:
+- hedgehog-1.6
+- hedgehog-utils-0.1.0.1
+- hspec-tidy-formatter-0.2.0.2

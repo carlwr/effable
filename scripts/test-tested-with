@@ -27,16 +27,11 @@ ghcs_default=(
 
 ghcs=( ${=${TTW_GHCS:-$ghcs_default}} )
 
-integer -i runTests
-
 foreach v ( $ghcs ) {
   print
   print "***"
   print "*** version: $v"
   print "***"
-
-  runTests=1
-  [[ $v == 9.14.1 ]] && runTests=0
 
   opts=(
     -v0
@@ -48,8 +43,8 @@ foreach v ( $ghcs ) {
   rm -rf dist-newstyle/cache/ \
          dist-newstyle/build/
 
-  true         && cabal $opts           build && print "OK (build)"
-  ((runTests)) && cabal $opts -fdoctest test  && print "OK (test)"
+  cabal $opts build && print "OK (build)"
+  cabal $opts test  && print "OK (test)"
 }
 
 print

@@ -1,7 +1,7 @@
-with-compiler: ghc-9.12.2
+with-compiler: ghc-9.14.1
 
 package effable
-  flags: +doctest +isDev
+  flags: +isDev
 
 tests: True
 test-show-details: direct

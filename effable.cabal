@@ -27,11 +27,6 @@ source-repository head
   type: git
   location: https://github.com/carlwr/effable
 
-flag doctest
-  description: enable doctests
-  default: False
-  manual: True
-
 flag isDev
   description: development conveniences
   default: False
@@ -84,10 +79,6 @@ library
 test-suite doctest
   import:
     , defaults
-  -- no solution for 9.14 due to doctest-parallell
-  -- (forcing with --alow-newer causes compilation error)
-  if !flag(doctest) || impl(ghc >= 9.14)
-      buildable: False
   hs-source-dirs:  test/doctests
   type:            exitcode-stdio-1.0
   main-is:         doctests.hs
@@ -95,4 +86,4 @@ test-suite doctest
       -threaded
   build-depends:
     , effable
-    , doctest-parallel >= 0.3 && < 1.0
+    , doctest-parallel >= 0.3 && < 0.5

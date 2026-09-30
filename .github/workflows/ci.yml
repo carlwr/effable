@@ -31,7 +31,7 @@ jobs:
 
       - name: Configure
         run: |
-          cabal configure --enable-tests -fdoctest --ghc-options=-Werror
+          cabal configure --enable-tests --ghc-options=-Werror
           cabal build all --dry-run
 
       - name: Restore cached dependencies

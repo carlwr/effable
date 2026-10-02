@@ -741,11 +741,20 @@ unsafeDeconstructRunWith (RunWith xs) = xs
 
 Methods of the 'Foldable' and 'Traversable' instances of the result type can be used e.g. to customize how the individual emission results are combined.
 
+== Laws
+
 @
 'Data.Foldable.sequenceA_' ('runWith' emit x)  ==  'run' emit x
 @
 
-=== Example
+[Naturality]:
+
+    @
+    'runWith' emit (f '<$>' x) == 'runWith' (emit . f) x
+    @
+
+
+== Example
 
 The following uses the 'foldr' method of t'RunWith'\'s 'Foldable' instance to create a 'run'-like function with a 'foldr'-style API:
 

@@ -236,7 +236,7 @@ _effable_applicative_doctest_typechecks = undefined
 
 {- | 'Monad' models /list-like indeterminism/.
 
-The result of @xs '>>=' f@ is the concatenation of the results of applying @f@ to each value embedded in @xs@.
+The result of @xs '>>=' f@ is the concatenation of the results of applying @f@ to each value embedded in @xs@. Emission wrappers from @xs@ are composed on the outside of those from @f@s result.
 
 @
 'pure' x  ==  'embed' x

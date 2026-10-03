@@ -357,6 +357,7 @@ mapMaybe f = effify (traverseJusts f)
 These hold for both 'wrap' and 'wrapInside':
 
 @
+'wrap' 'id'          ==  'id'
 'wrap' f 'mempty'    ==  'mempty'
 'wrap' f (x '<>' y)  ==  'wrap' f x '<>' 'wrap' f y   -- distributes over '<>'
 g '<$>' 'wrap' f x   ==  'wrap' f (g '<$>' x) \ \     -- commutes with 'fmap'
@@ -368,7 +369,6 @@ g '<$>' 'wrap' f x   ==  'wrap' f (g '<$>' x) \ \     -- commutes with 'fmap'
 The given function /composes outside of/ any existing wrappers.
 
 @
-'wrap' 'id'          ==  'id'
 'wrap' (f . g)\ \    ==  'wrap' f . 'wrap' g
           \ \ \ \        -- composes /co/variantly
 
@@ -382,7 +382,6 @@ wrap :: Wrap m -> Effable m b -> Effable m b
 The given function /composes inside of/ any existing wrappers, i.e. it will be applied directly to the action produced by the emission.
 
 @
-'wrapInside' 'id'              ==  'id'
 'wrapInside' (f . g)\ \        ==  'wrapInside' g . 'wrapInside' f
                 \ \ \ \            -- composes /contra/variantly
 

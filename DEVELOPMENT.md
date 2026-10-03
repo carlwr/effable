@@ -8,9 +8,20 @@
 import: misc/dev.project
 ```
 
+### Test-build with `cabal.project.local` ignored
+
 If a `cabal.project.local` is present it can be ignored with:
 ```sh
 cabal --project-file=cabal.project.no-local ..
+```
+
+Note: `cabal.project.no-local` imports `cabal.project` so that file stays active.
+
+_Warning: Cabal freshness checks won't work._ If `cabal.project` is edited, then, before `cabal` is invoked again, do one of:
+
+```sh
+touch cabal.project.no-local
+rm -rf dist-newstyle/cache/plan.json
 ```
 
 ### Testing

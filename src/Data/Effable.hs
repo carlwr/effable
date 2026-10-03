@@ -578,7 +578,7 @@ An 'Int' is 'Enumerable' but has many inhabitants so reifying @IO Int@ becomes c
 > λ> :set +s
 > λ> run print ineffable
 > 1
-> (ran for 1.02 million years, allocated 3.06e10 gigabytes)
+> (ran for 1.02 million years, allocated 3.06e10 terabytes)
 >
 
 -}

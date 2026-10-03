@@ -95,6 +95,10 @@ module Data.Effable
 , RunWith
 , runWith
 
+-- * Unsafe
+, unsafeDeconstruct
+, unsafeDeconstructRunWith
+
 -- * Usage example
 -- $env_example
 
@@ -182,6 +186,11 @@ emitPart emit (Part w l) = w (emit l)
 {- | An ordered sequence of values, each with an associated emission wrapper (default: 'id'). -}
 newtype Effable m b = Effable { inEffable :: [Part m b] }
   deriving (Semigroup, Monoid, Functor)
+
+unsafeDeconstruct :: Effable m b -> [(Wrap m, b)]
+unsafeDeconstruct = fmap unPart . inEffable
+  where
+    unPart (Part w item) = (w,item)
 
 instance (IsString b) => IsString (Effable m b) where
   fromString = string
@@ -725,6 +734,9 @@ run emit (Effable parts) = traverse_ (emitPart emit) parts
 
 newtype RunWith a = RunWith [a]
   deriving (Functor, Foldable, Traversable)
+
+unsafeDeconstructRunWith :: RunWith a -> [a]
+unsafeDeconstructRunWith (RunWith xs) = xs
 
 {- | Create a representation of the individual emission results of an t'Effable'.
 
